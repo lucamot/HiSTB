@@ -205,7 +205,7 @@ result=$(gcc -dumpversion)
 check_tools "gcc" "${result}" ">=" 4 4 0
 
 result=$(make --version | awk '$0~/[0-9]\.[0-9]/{print $3}')
-check_tools "make" "${result}" "=" 3 81 0
+check_tools "make" "${result}" ">=" 3 81 0
 
 result=$(msgfmt --version | awk '$0~/[0-9]\.[0-9]/{print $4}')
 check_tools "gettext" "${result}" ">=" 0 18 1

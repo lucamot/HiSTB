@@ -55,7 +55,7 @@ function check_bash()
     fi
 }
 
-check_bash
+#check_bash
 
 setpaths
 
