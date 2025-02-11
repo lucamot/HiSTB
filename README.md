@@ -1,51 +1,57 @@
-# Hi3798mv100 （Huawei ec6108v9 IPTV）Linux的编译 烧录 blog
-本文记录了为华为机顶盒EC6108v9（海思Hi3798mv100芯片）编译内核、烧录uboot以及刷入Ubuntu 16.04 rootfs的过程。同时，恶补了一下uboot的相关知识。
-## 基本环境
-目标板：IPTV退役的华为机顶盒EC6108v9（ hisilicon Hi3798mv100 2G 8G emmc）
-编译环境：Ubuntu 16.04 32bit VM
-海思linux内核：HiSTBLinux 适用于hi3798mv100 mv200 
-SDK: HiSTBLinuxV100R005C00SPC041B020
+# Hi3798mv100 (Huawei ec6108v9 IPTV) Linux Compilation and Flashing Blog
 
-## 环境准备
+This article documents the process of compiling the kernel, flashing U-Boot, and installing the Ubuntu 16.04 root filesystem for the Huawei set-top box EC6108v9 (using the Hisilicon Hi3798mv100 chip). Additionally, I refreshed my knowledge of U-Boot.
 
-```
+## Basic Environment
+
+Target Board: Retired Huawei EC6108v9 IPTV set-top box (Hisilicon Hi3798mv100 2GB RAM, 8GB eMMC)  
+Compilation Environment: Ubuntu 16.04 32-bit VM  
+Hisilicon Linux Kernel: HiSTBLinux for Hi3798mv100 mv200  
+SDK: HiSTBLinuxV100R005C00SPC041B020  
+
+## Environment Preparation
+
+```bash
 git clone https://github.com/glinuz/hi3798mv100
-#切换到工作目录
-cd HiSTBLinuxV100R005C00SPC041B020  #$SDK_path
-#安装需要的编译工具，可以使用SDK带的shell脚本，也可以自己安装
+# Switch to the working directory
+cd HiSTBLinuxV100R005C00SPC041B020  # $SDK_path
+# Install the necessary compilation tools, either using the shell script from the SDK or installing them yourself
 sh server_install.sh
-#or
+# or
 apt-get install gcc make gettext bison flex bc zlib1g-dev libncurses5-dev lzma
-#拷贝SDK中预先定义的
+# Copy the pre-defined configurations from the SDK
 cp configs/hi3798mv100/hi3798mdmo1g_hi3798mv100_cfg.mak ./cfg.mak
 
-source ./env.sh  #SDK各种环境变量
-#按需修改编译的配置
+source ./env.sh  # SDK various environment variables
+# Modify the compilation configurations as needed
 make menuconfig
-make build -j4 2>&1  | tee -a buildlog.txt
+make build -j4 2>&1 | tee -a buildlog.txt
 ```
-制成功后，在out/hi3798mv100可以找到编译好的fastboot-burn.bin、bootargs.bin、hi_kernel.bin，分别是uboot引导文件、uboot引导参数配置和linux内核。
-## 使用HiTool烧录到eMMC
-TTL连接图见[hi3798mv100-ec6109.jpg]，具体烧录方案可以搜索hitool教程。
+Once compilation is successful, you can find the compiled `fastboot-burn.bin`, `bootargs.bin`, and `hi_kernel.bin` in `out/hi3798mv100`, which are the U-Boot boot files, U-Boot boot parameter configurations, and the Linux kernel, respectively.
 
-hitool烧录界面配置建[hit00l-burn.png]
+## Using HiTool to Flash to eMMC
 
-eMMC分区为uboot 1M、bootargs 1M、kernel 8M、rootfs 128M，具体见[emmc_partitions.xml].
+Refer to the TTL connection diagram [hi3798mv100-ec6109.jpg], and you can search for HiTool tutorials for the specific flashing procedure.
 
-如果修改分区大小，调整分区大小，需同步修改bootargs.txt 和 emmc_partitions.xml。
+The HiTool flashing interface configuration can be found in [hit00l-burn.png].
 
-configs/hi3798mv100/prebuilts/bootargs.txt，并重新生成bootargs.bin文件
+The eMMC partitions are `uboot 1M`, `bootargs 1M`, `kernel 8M`, and `rootfs 128M`. For specifics, see [emmc_partitions.xml].
 
-```
+If the partition sizes are modified, adjust them and synchronize changes in `bootargs.txt` and `emmc_partitions.xml`.
+
+Edit `configs/hi3798mv100/prebuilts/bootargs.txt` and regenerate the `bootargs.bin` file:
+
+```bash
 bootcmd=mmc read 0 0x1FFFFC0 0x1000 0x4000;bootm 0x1FFFFC0
 bootargs=console=ttyAMA0,115200 root=/dev/mmcblk0p4 rootfstype=ext4 rootwait blkdevparts=mmcblk0:1M(fastboot),1M(bootargs),8M(kernel),128M(rootfs),-(system)
 
-mkbootargs  -s 1M -r bootargs.txt  -o bootargs.bin
+mkbootargs -s 1M -r bootargs.txt -o bootargs.bin
 ```
-bootcmd操作说明：从第0个mmc设备块上2M字节处开始（0x1000的十进制4096,4096*512/1024=2M），读取16×512个字节（0x4000的十进制16384*512/1024=8M）到内存0x1FFFFC0处，并从此处引导。
+The `bootcmd` operation description: Start reading from the first MMC device block, 2MB (0x1000 in decimal is 4096; 4096 * 512 / 1024 = 2M), reading 16×512 bytes (0x4000 in decimal is 16384; 16384 * 512 / 1024 = 8M) into memory at 0x1FFFFC0, and boot from there.
 
-打开串口console，以便进行调试。console=ttyAMA0,115200
-uboot启动过程输出如下：
+Open the serial console for debugging: `console=ttyAMA0,115200`.  
+The U-Boot startup process output is as follows:
+
 ```
 Bootrom start
 Boot from eMMC
@@ -59,6 +65,7 @@ Reg Name:     hi3798mdmo1g_hi3798mv100_ddr3_1gbyte_16bitx2_4layers_emmc.reg
 
 Jump to DDR
 
+...
 
 Fastboot 3.3.0 (root@glinuz) (Jul 25 2020 - 08:25:47)
 
@@ -68,46 +75,9 @@ CPU:           Hi3798Mv100
 Boot Media:    eMMC
 DDR Size:      1GB
 
+...
 
-MMC/SD controller initialization.
-MMC/SD Card:
-    MID:         0x15
-    Read Block:  512 Bytes
-    Write Block: 512 Bytes
-    Chip Size:   7456M Bytes (High Capacity)
-    Name:        "8GME4R"
-    Chip Type:   MMC
-    Version:     5.1
-    Speed:       52000000Hz
-    Mode:        DDR50
-    Bus Width:   8bit
-    Boot Addr:   0 Bytes
-Net:   upWarning: failed to set MAC address
-
-
-Boot Env on eMMC
-    Env Offset:          0x00100000
-    Env Size:            0x00010000
-    Env Range:           0x00010000
-ID_WORD have already been locked
-
-
-SDK Version: HiSTBLinuxV100R005C00SPC041B020_20161028
-
-Reserve Memory
-    Start Addr:          0x3FFFE000
-    Bound Addr:          0x8D24000
-    Free  Addr:          0x3F8FC000
-    Alloc Block:  Addr         Size
-                  0x3FBFD000   0x400000
-                  0x3F8FC000   0x300000
-
-Press Ctrl+C to stop autoboot
-
-MMC read: dev # 0, block # 4096, count 16384 ... 16384 blocks read: OK
-
-84937034 Bytes/s
-## Booting kernel from Legacy Image at 01ffffc0 ...
+Booting kernel from Legacy Image at 01ffffc0 ...
    Image Name:   Linux-3.18.24_s40
    Image Type:   ARM Linux Kernel Image (uncompressed)
    Data Size:    6959232 Bytes = 6.6 MiB
@@ -120,31 +90,35 @@ ATAGS [0x00000100 - 0x00000300], 512Bytes
 
 Starting kernel ...
 ```
-## 高级编译
-### 自定义linux内核
-ARM平台内核配置文件采用defconfig格式，正确使用和保存deconfig的流程如下：
+## Advanced Compilation
 
+### Custom Linux Kernel
+
+For the ARM platform, the kernel configuration file uses the defconfig format. The correct usage and saving process is as follows:
+
+```bash
 source/kernel/linux-3.18.y/arch/arm/configs/hi3798mv100_defconfig 
 cd source/kernel/linux-3.18.y/
-可以使用本git库提供的hi3798mv100_defconfig-0812
-1. 先备份hi3798mv100_defconfig
-2. make ARCH=arm hi3798mv100_defconfig #从defconfig生成标准linux内核配置.config文件
-3. make ARCH=arm menuconfig #修改内核配置，并保存
-4. make ARCH=arm savedefconfig #重新生成defconfg文件
-5. cp defconfig arch/arm/configs/hi3798mv100_defconfig  #复制defconfig文件到正确的位置。
-6. make distclean #清理之前编译生产的文件
-7. cd $SDK_path;make linux  #重新编译kernel
-
-需关注的kernel编译参数：
-
-    打开devtmpfs，/dev 文件系统
-
-    打开open by fhandle syscalls
-
-    打开cgroup功能
-
-### 修改uboot
 ```
+You can use the `hi3798mv100_defconfig-0812` provided by this Git repository.
+
+1. First, backup `hi3798mv100_defconfig`
+2. `make ARCH=arm hi3798mv100_defconfig` # Generate the standard Linux kernel configuration `.config` file from defconfig.
+3. `make ARCH=arm menuconfig` # Modify the kernel configuration and save.
+4. `make ARCH=arm savedefconfig` # Regenerate the defconfig file.
+5. `cp defconfig arch/arm/configs/hi3798mv100_defconfig`  # Copy the defconfig file to the correct location.
+6. `make distclean` # Clean up previously compiled files.
+7. `cd $SDK_path;make linux`  # Recompile the kernel.
+
+Key kernel compilation parameters to pay attention to:
+
+- Enable devtmpfs, the `/dev` filesystem
+- Enable open by fhandle syscalls
+- Enable cgroup functionality
+
+### Modify U-Boot
+
+```c
 source/boot/fastboot/include/configs godbox.h
 #define CONFIG_SHOW_MEMORY_LAYOUT 1
 #define CONFIG_SHOW_REG_INFO      1
@@ -153,16 +127,21 @@ source/boot/fastboot/include/configs godbox.h
 or
 cd $SDK_path;make hiboot CONFIG_SHOW_RESERVE_MEM_LAYOUT='y'
 ```
-CONFIG_SHOW_RESERVE_MEM_LAYOUT='y' 编译时，打开uboot启动时输出MEM信息开关
-## 启动时修改uboot启动参数
-在uboot启动阶段，Ctrl+C进入uboot模式
+When `CONFIG_SHOW_RESERVE_MEM_LAYOUT='y'` is set during compilation, it enables the output of memory information during U-Boot startup.
+
+## Modify U-Boot Boot Parameters at Startup
+
+During the U-Boot startup stage, press Ctrl+C to enter the U-Boot mode:
+
+```bash
+setenv bootargs console=tty1 console=ttyAMA0,115200 root=/dev/mmcblk0p4 rootfstype=ext4 rootwait blkdevparts=mmcblk0:1M(fastboot),1M(bootargs),8M(kernel),128M(rootfs),-(system)  ipaddr=192.168.10.100 gateway=192.168.10.1 netmask=255.255.255.0 netdev=eth0
+saveenv
+reset
 ```
- setenv bootargs console=tty1 console=ttyAMA0,115200 root=/dev/mmcblk0p4 rootfstype=ext4 rootwait blkdevparts=mmcblk0:1M(fastboot),1M(bootargs),8M(kernel),128M(rootfs),-(system)  ipaddr=192.168.10.100 gateway=192.168.10.1 netmask=255.255.255.0 netdev=eth0
- saveenv
- reset
- ```
-## 制作ubuntu rootfs
-```
+
+## Create Ubuntu Root Filesystem
+
+```bash
 apt-get install binfmt-support debootstrap qemu qemu-user-static
 cd;mkdir rootfs
 debootstrap --arch=armhf --variant=minbase  --foreign --include=locales,util-linux,apt-utils,ifupdown,systemd-sysv,iproute2,curl,wget,expect,ca-certificates,openssh-server,isc-dhcp-client,vim-tiny,bzip2,cpio,usbutils,netbase,parted,jq,bc,crda,wireless-tools,iw stretch rootfs http://mirrors.ustc.edu.cn/debian/
@@ -177,7 +156,7 @@ mount -t tmpfs tmpfs run
 LC_ALL=C LANGUAGE=C LANG=C chroot . /debootstrap/debootstrap --second-stage
 LC_ALL=C LANGUAGE=C LANG=C chroot . dpkg --configure -a
 
-LC_ALL=C LANGUAGE=C LANG=C chroot . /bin/bash  #以下命令在chroot环境bash执行
+LC_ALL=C LANGUAGE=C LANG=C chroot . /bin/bash  # The following commands are executed in a chroot environment bash
 mkdir /proc
 mkdir /tmp
 mkdir /sys
@@ -218,37 +197,34 @@ apt-get autoclean
 apt-get clean
 apt clean
 ```
-制作rootfs镜像
-```
+
+Creating the root filesystem image:
+
+```bash
 make_ext4fs -l 128M -s rootfs_128M.ext4 ./rootfs
 ```
-参考资料
 
-[1] https://wiki.ubuntu.com/ARM/RootfsFromScratch/QemuDebootstrap
+## Flashing Package - Binary Files
+Download the file release:
 
-[2] http://gnu-linux.org/building-ubuntu-rootfs-for-arm.html
+- `fastboot-bin.bin` - U-Boot partition package
+- `bootargs.bin` - U-Boot parameter partition package
+- `hi_kernel.bin` - Kernel partition package
+- `rootfs_128m.ext` - Root filesystem package
+- `emmc_partitions.xml` - Flashing partition configuration file
 
-## 刷机包-二进制文件
-文件下载 release
-fastboot-bin.bin  uboot分区包
-bootargs.bin   uboot参数分区包
-hi_kernel.bin  kernel分区包
-rootfs_128m.ext  root根分区包
-emmc_partitions.xml  刷机分区配置文件
-如调整分区大小，需要重新生成bootargs.bin 和调整分区配置文件。
-使用华为hi-tool,emmc烧录
+If you adjust the partition sizes, you need to regenerate `bootargs.bin` and adjust the partition configuration file. Use Huawei Hi-Tool for eMMC flashing.
 
-## uboot说明
-很多同学问uboot启动，有关主要uboot参数如下,emmc存储芯片
+## U-Boot Explanation
+
+Many students ask about U-Boot startup; key U-Boot parameters regarding the eMMC storage chip are as follows:
+
 ```
 bootcmd=mmc read 0 0x1FFFFC0 0x1000 0x4000;bootm 0x1FFFFC0
 bootargs=console=ttyAMA0,115200 root=/dev/mmcblk0p4 rootfstype=ext4 rootwait blkdevparts=mmcblk0:1M(fastboot),1M(bootargs),8M(kernel),128M(rootfs),-(system)
 ```
-bootcmd uboot启动引导： mmc read <device num> addr blk
-指令        内存地址 mmc内地址    长度
-mmc read 0 0x1FFFFC0 0x1000 0x4000
-bootm 0x1FFFFC0   #从内存地址引导内核
-    
-    
-## 其他
-后继又在debootstrap中加入了python golang docker等软件包，并调大rootfs到4GB，同时修改相应bootargs emmc_partition。
+The `bootcmd` U-Boot boot command: `mmc read <device num> addr blk` indicates the memory address and the internal MMC address and length.
+
+## Others
+
+Subsequently, I added Python, Go, Docker, and other software packages in `debootstrap`, enlarged the root filesystem to 4GB, and modified the corresponding `bootargs` and `emmc_partition`.
