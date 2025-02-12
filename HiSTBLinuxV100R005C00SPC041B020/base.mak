@@ -6,11 +6,11 @@ endif
 
 include $(SDK_DIR)/$(SDK_CFGFILE)
 
-ifeq ($(CFG_PRODUCT_TYPE),linux)
-ifneq ($(HISI_LINUX_ENV),ok)
-$(error "Please run 'source ./env.sh' before building!")
-endif
-endif
+#ifeq ($(CFG_PRODUCT_TYPE),linux)
+#ifneq ($(HISI_LINUX_ENV),ok)
+#$(error "Please run 'source ./env.sh' before building!")
+#endif
+#endif
 
 #=============SDK_DIR======================================================================
 
