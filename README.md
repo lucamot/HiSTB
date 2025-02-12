@@ -26,6 +26,11 @@ source ./env.sh  # SDK various environment variables
 # Modify the compilation configurations as needed
 make menuconfig
 make build -j4 2>&1 | tee -a buildlog.txt
+
+# build process will fail because of a duplicate yylloc object:
+# - open ./source/kernel/linux-3.18.y/scripts/dtc/dtc-parser.y
+# - find yylloc and put "extern" keyword in front of it
+make build -j4 2>&1 | tee -a buildlog.txt
 ```
 Once compilation is successful, you can find the compiled `fastboot-burn.bin`, `bootargs.bin`, and `hi_kernel.bin` in `out/hi3798mv100`, which are the U-Boot boot files, U-Boot boot parameter configurations, and the Linux kernel, respectively.
 
