@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #============================================
 #  Create for Hisilicon STB SDK configure
 #============================================
@@ -108,7 +108,7 @@ check_tools()
 	tmp=$(echo "${result}" | awk '/[0-9]\.[0-9]|[0-9][0-9]\.[0-9]/{print $1}')
 	if [ "s${tmp}" = "s" ];then
 	{
-		error ${LINENO} "${util} is not exist, please install." "sudo apt-get install ${util}"
+		error ${LINENO} "${util} is not exist, please install." "apt-get -y install ${util}"
 		return 0
 	}
 	fi
@@ -145,7 +145,7 @@ check_libs()
 	msg=$(dpkg -s ${util})
 	if [ $? != 0 ]; then
 	{
-		error ${LINENO} "${util} is not exist, please install." "sudo apt-get install ${util}"
+		error ${LINENO} "${util} is not exist, please install." "apt-get -y install ${util}"
 		msg=$(dpkg -s ${util})	
 	}
 	fi
@@ -156,25 +156,25 @@ check_libs()
 ################################################################################
 #  check linux version
 ################################################################################
-echo "Check linux host:"
+#echo "Check linux host:"
 
-ubuntu_version_info=$(lsb_release -a)
-if [ $? != 0 ]; then
-	error ${LINENO} "Command lsb_release is not exist."
-fi
-echo -e "${ubuntu_version_info}"
-result=$(echo "${ubuntu_version_info}" | grep "Ubuntu")
-if [ "s${result}" = "s" ]; then
-	error ${LINENO} "Only Support Ubuntu"
-fi
+#ubuntu_version_info=$(lsb_release -a)
+#if [ $? != 0 ]; then
+#	error ${LINENO} "Command lsb_release is not exist."
+#fi
+#echo -e "${ubuntu_version_info}"
+#result=$(echo "${ubuntu_version_info}" | grep "Ubuntu")
+#if [ "s${result}" = "s" ]; then
+#	error ${LINENO} "Only Support Ubuntu"
+#fi
+#
+#result=$(lsb_release -sr)
+#cmp_version "${result}" 10 0
+#if [ "${CMD_RET}" = "<" ]; then
+#	error ${LINENO} "Ubuntu version is too old. Ubuntu 10 or later is recommended."
+#fi
 
-result=$(lsb_release -sr)
-cmp_version "${result}" 10 0
-if [ "${CMD_RET}" = "<" ]; then
-	error ${LINENO} "Ubuntu version is too old. Ubuntu 10 or later is recommended."
-fi
-
-echo;
+#echo;
 ################################################################################
 #  check the type of shell
 ################################################################################
@@ -182,7 +182,7 @@ echo -n "Check bash: "
 result_bash=$(bash --version)
 if [ $? != 0 ];then
 {
-	error ${LINENO} "bash is not exist, Please install bash" "sudo aptget-install bash"
+	error ${LINENO} "bash is not exist, Please install bash" "aptget-install -y bash"
 	result_bash=$(bash --version)
 }
 fi
@@ -190,12 +190,16 @@ fi
 result_sh=$(sh --version)
 if [ "${result_bash}" != "${result_sh}" ];then
 {
-	error ${LINENO} "sh is not bash, Should modify it." "sudo rm -f /bin/sh"
-	sudo ln -s /bin/bash /bin/sh
+	error ${LINENO} "sh is not bash, Should modify it." "rm -f /bin/sh"
+	ln -s /bin/bash /bin/sh
 	echo "Modify Successfully!"
 }
 fi
 
+echo "... OK"
+
+echo -n "APT update: "
+result_bash=$(apt -y update)
 echo "... OK"
 
 ################################################################################

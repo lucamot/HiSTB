@@ -37,9 +37,10 @@ function setpaths()
     aarch64_histbv100_path=${PWD}/tools/linux/toolchains/aarch64-histbv100-linux/bin
     utils_path=${PWD}/tools/linux/utils/bin
 
-    PATH=${arm_histbv310_path}:${PATH//${arm_histbv310_path}:/}
-    PATH=${aarch64_histbv100_path}:${PATH//${aarch64_histbv100_path}:/}
-    PATH=${utils_path}:${PATH//${utils_path}:/}
+    export PATH=${arm_histbv310_path}:${PATH//${arm_histbv310_path}:/}
+    export PATH=${aarch64_histbv100_path}:${PATH//${aarch64_histbv100_path}:/}
+    export PATH=${utils_path}:${PATH//${utils_path}:/}
+    echo $PATH
 }
 
 function check_bash()
