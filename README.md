@@ -45,7 +45,7 @@ Edit `configs/hi3798mv100/prebuilts/bootargs.txt` and regenerate the `bootargs.b
 bootcmd=mmc read 0 0x1FFFFC0 0x1000 0x4000;bootm 0x1FFFFC0
 bootargs=console=ttyAMA0,115200 root=/dev/mmcblk0p4 rootfstype=ext4 rootwait blkdevparts=mmcblk0:1M(fastboot),1M(bootargs),8M(kernel),128M(rootfs),-(system)
 
-mkbootargs -s 1M -r bootargs.txt -o bootargs.bin
+mkbootargs -s 1024 -r bootargs.txt -o bootargs.bin
 ```
 The `bootcmd` operation description: Start reading from the first MMC device block, 2MB (0x1000 in decimal is 4096; 4096 * 512 / 1024 = 2M), reading 16×512 bytes (0x4000 in decimal is 16384; 16384 * 512 / 1024 = 8M) into memory at 0x1FFFFC0, and boot from there.
 
